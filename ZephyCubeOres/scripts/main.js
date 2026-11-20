@@ -1,3 +1,4 @@
+import "./style.js";
 import './smelt.js'; // Simple AutoSmelt 2.2.1 by Rezn1r (MIT), merged into this pack
 import { world, system } from '@minecraft/server';
 import { on } from './features.js';
