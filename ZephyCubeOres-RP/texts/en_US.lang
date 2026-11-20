@@ -1,0 +1,6 @@
+pack.name=ZephyCube Ores RP
+pack.description=AutoSmelt config item texture and texts
+
+item.sas:config.name=§l§rAuto§eSmelt§r Config
+item.sas:config.given=§l§7[§cAuto§eSmelt§7]§r You have been given the §lAuto§eSmelt§r config.
+item.sas:config.saved=§l§7[§cAuto§eSmelt§7]§r §aConfig has been saved!§r
