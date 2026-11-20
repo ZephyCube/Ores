@@ -1,3 +1,4 @@
+import './smelt.js'; // Simple AutoSmelt 2.2.1 by Rezn1r (MIT), merged into this pack
 import { world, system } from '@minecraft/server';
 
 // ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to Overworld chunks the first

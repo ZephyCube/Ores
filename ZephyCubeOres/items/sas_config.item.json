@@ -1,0 +1,27 @@
+{
+	"format_version": "1.21.130",
+	"minecraft:item": {
+		"description": {
+			"identifier": "sas:config",
+			"menu_category": {
+				"category": "items"
+			}
+		},
+		"components": {
+			"minecraft:hand_equipped": false,
+			"minecraft:rarity": "rare",
+			"minecraft:max_stack_size": 1,
+			"minecraft:foil": true,
+			"minecraft:allow_off_hand": true,
+			"minecraft:icon": "sas:config",
+			"minecraft:display_name": {
+				"value": "item.sas:config.name"
+			},
+			"sas:config_component": {},
+			"minecraft:cooldown": {
+				"category": "config",
+				"duration": 1
+			}
+		}
+	}
+}
