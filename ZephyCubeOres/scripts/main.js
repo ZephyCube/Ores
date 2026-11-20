@@ -1,5 +1,5 @@
 import "./style.js";
-import './smelt.js'; // Simple AutoSmelt 2.2.1 by Rezn1r (MIT), merged into this pack
+import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
 import { world, system } from '@minecraft/server';
 import { on } from './features.js';
 
@@ -135,7 +135,7 @@ system.runInterval(() => {
 
 // ---------------------------------------------------------------------------------------------------------------
 // Double ore drops. Before the break we remember the item entities already lying near the block; after the break,
-// every new item near it that belongs to that ore (raw drop or the smelted form, because Simple AutoSmelt may have
+// every new item near it that belongs to that ore (raw drop or the smelted form, because AutoSmelt may have
 // converted it already) is copied once. AutoSmelt then smelts the copy like any other drop. Silk Touch is skipped,
 // so the ore block itself is never doubled. Only blocks broken by a player count (TNT, pistons: not doubled).
 const DROPS = {

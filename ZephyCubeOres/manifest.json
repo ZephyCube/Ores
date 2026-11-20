@@ -2,12 +2,12 @@
   "format_version": 2,
   "header": {
     "name": "ZephyCube Ores",
-    "description": "Extra ore veins, double ore drops and Simple AutoSmelt (by Rezn1r, MIT).",
+    "description": "Extra ore veins, double ore drops and AutoSmelt.",
     "uuid": "87c69c1d-403b-5f1f-be4d-5c855aec4a12",
     "version": [
       1,
       4,
-      3
+      4
     ],
     "min_engine_version": [
       1,
@@ -22,7 +22,7 @@
       "version": [
         1,
         4,
-        3
+        4
       ]
     },
     {
@@ -33,7 +33,7 @@
       "version": [
         1,
         4,
-        3
+        4
       ]
     }
   ],
@@ -51,7 +51,7 @@
       "version": [
         1,
         4,
-        3
+        4
       ]
     }
   ],

@@ -1,6 +1,4 @@
-// Simple AutoSmelt Main Script
-// Made by Rezn1r - https://mcpedl.com/simple-autosmelt/
-// License: MIT
+// AutoSmelt, part of ZephyCube Ores. Based on Simple AutoSmelt by Rezn1r (https://mcpedl.com/simple-autosmelt/), MIT license.
 // ZephyCube Ores 1.4.0: adds /zc:as and a default of "on"; module "autosmelt" turns it all off.
 import { world, system, ItemStack, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus, CustomCommandParamType } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
@@ -11,7 +9,8 @@ const configDistanceKey = "sas:distance";
 const configParticleKey = "sas:particle";
 const configToolModeKey = "sas:tool_mode";
 const configActivationModeKey = "sas:activation_mode";
-const loreLine = '§r §cAuto§eSmelt';
+const loreLine = '§r§6AutoSmelt';
+const oldLoreLine = /^§r\s§cAuto§eSmelt$/; // old branded lore, replaced when seen on a tool
 const smeltableOres = [
     "minecraft:copper_ore",
     "minecraft:deepslate_copper_ore",
@@ -112,9 +111,11 @@ function addPickaxeLore(player) {
         const item = itemComponent.container.getItem(i);
         if (item && item.typeId.endsWith("_pickaxe")) {
             const lore = item.getLore();
-            if (!lore.includes(loreLine)) {
-                lore.push(loreLine);
-                item.setLore(lore);
+            const next = lore.filter((l) => !oldLoreLine.test(l));
+            const changed = next.length !== lore.length;
+            if (!next.includes(loreLine)) next.push(loreLine);
+            if (changed || next.length !== lore.length) {
+                item.setLore(next);
                 itemComponent.container.setItem(i, item);
             }
         }
@@ -126,9 +127,11 @@ function addShovelLore(player) {
         const item = itemComponent.container.getItem(i);
         if (item && item.typeId.endsWith("_shovel")) {
             const lore = item.getLore();
-            if (!lore.includes(loreLine)) {
-                lore.push(loreLine);
-                item.setLore(lore);
+            const next = lore.filter((l) => !oldLoreLine.test(l));
+            const changed = next.length !== lore.length;
+            if (!next.includes(loreLine)) next.push(loreLine);
+            if (changed || next.length !== lore.length) {
+                item.setLore(next);
                 itemComponent.container.setItem(i, item);
             }
         }
@@ -236,7 +239,7 @@ const configComponent = {
             distanceValue = 5; // default distance
         }
         const form = new ModalFormData()
-            .title("§l§cAuto§eSmelt§r §6Configuration")
+            .title("§lAutoSmelt")
             .label("§r§7Configure your AutoSmelt settings below.§r")
             .divider()
             .toggle("Enable AutoSmelt", { defaultValue: isSmeltEnabledValue })
@@ -246,7 +249,7 @@ const configComponent = {
             .slider("Max Smelt Distance", 1, 20, { defaultValue: distanceValue });
         form.show(player).then((response) => {
             if (response.canceled) {
-                player.sendMessage("§cConfiguration canceled.§r");
+                player.sendMessage("§7Configuration canceled.");
                 return;
             }
             const [label, divider, smeltEnabledResp, particleEnabledResp, toolModeResp, activationModeResp, distanceResp] = response.formValues;
@@ -280,8 +283,13 @@ system.beforeEvents.startup.subscribe((init) => {
         else if (a === "status") { /* no change */ }
         else if (a === "") state = !state;
         else return { status: CustomCommandStatus.Failure, message: "Use /zc:as, /zc:as on, /zc:as off or /zc:as status. More settings: use the AutoSmelt Config item." };
-        if (a !== "status") system.run(() => setSmeltEnabled(player, state));
-        return { status: CustomCommandStatus.Success, message: `§7[§cAuto§eSmelt§7]§r ${state ? "§aon" : "§coff"}` };
+        system.run(() => {
+            try {
+                if (a !== "status") setSmeltEnabled(player, state);
+                player.sendMessage(`AutoSmelt is §p${state ? "on" : "off"}§f.`);
+            } catch { }
+        });
+        return { status: CustomCommandStatus.Success };
     };
     init.customCommandRegistry.registerCommand({
         name: "zc:as",
