@@ -1,12 +1,11 @@
 // ZephyCube chat look (same file in every pack, only TAGS differs). Applies to every chat message and title this
-// pack sends: "[ZephyCube] text" with gray brackets, a lapis-blue name, white text, gold highlights; red stays red.
-// Titles are bold gold, subtitles white. Action bars are not touched. Change BLUE to restyle (§1 darker, §9 lighter).
+// pack sends: "[ZephyCube] text" with gray brackets, a gold name, white text, §p highlights; red stays red.
+// Titles are bold gold, subtitles white. Action bars are not touched.
 import * as mc from "@minecraft/server";
 
 const { world, Player, ScreenDisplay } = mc;
 
-const BLUE = "§t";
-const PREFIX = "§7[" + BLUE + "ZephyCube§7]§r ";
+const PREFIX = "§7[§6ZephyCube§7]§r ";
 const TAGS = []; // old "[Tag]" lead-ins that the prefix replaces
 const CODE = /§[0-9a-fg-v]/g;
 const TAG_RE = TAGS.length
@@ -32,7 +31,7 @@ function styleChat(msg) {
     if (c === lead) return base;
     if (c === "§c" || c === "§4") return "§c";
     if (c === "§7" || c === "§8" || c === "§f") return c;
-    return "§6";
+    return "§p";
   });
   return PREFIX + (lead ? "" : base) + body;
 }
