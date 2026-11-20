@@ -2,12 +2,12 @@
   "format_version": 2,
   "header": {
     "name": "ZephyCube Ores RP",
-    "description": "v1.4.1",
+    "description": "v1.4.2",
     "uuid": "2aa8ffbf-dd2c-513e-a02c-40623d33e95c",
     "version": [
       1,
       4,
-      1
+      2
     ],
     "min_engine_version": [
       1,
