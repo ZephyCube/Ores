@@ -1,0 +1,31 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "zc:autosmelt_config"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      " i ",
+      "iCi",
+      " i "
+    ],
+    "key": {
+      "i": {
+        "item": "minecraft:iron_ingot"
+      },
+      "C": {
+        "item": "minecraft:cobblestone"
+      }
+    },
+    "result": {
+      "item": "sas:config",
+      "count": 1
+    },
+    "unlock": {
+      "context": "AlwaysUnlocked"
+    }
+  }
+}
