@@ -1,5 +1,6 @@
 import './smelt.js'; // Simple AutoSmelt 2.2.1 by Rezn1r (MIT), merged into this pack
 import { world, system } from '@minecraft/server';
+import { on } from './features.js';
 
 // ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to Overworld chunks the first
 // time a player is near them, so land that was explored before the change gets the same ore as new land.
@@ -105,7 +106,7 @@ function* worker() {
 }
 
 system.runInterval(() => {
-  if (queue.length >= CONFIG.maxQueue) return;
+  if (!on("veins") || queue.length >= CONFIG.maxQueue) return;
   const cands = [];
   for (const p of world.getAllPlayers()) {
     try {
@@ -164,7 +165,7 @@ function creative(p) {
 }
 
 world.beforeEvents.playerBreakBlock.subscribe((ev) => {
-  if (!CONFIG.doubleDrops) return;
+  if (!CONFIG.doubleDrops || !on("double_drops")) return;
   try {
     const id = ev.block.typeId;
     if (!dropsFor(id)) return;
@@ -194,7 +195,7 @@ function copyDrops(dim, loc, wanted, snap, budget) {
 }
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
-  if (!CONFIG.doubleDrops) return;
+  if (!CONFIG.doubleDrops || !on("double_drops")) return;
   try {
     const wanted = dropsFor(ev.brokenBlockPermutation.type.id);
     if (!wanted) return;
