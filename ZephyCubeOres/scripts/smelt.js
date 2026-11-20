@@ -3,6 +3,7 @@
 // License: MIT
 import { world, system, ItemStack, EntityComponentTypes } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
+import { on } from "./features.js";
 const configGivenTag = "sas:config_given";
 const configDistanceKey = "sas:distance";
 const configParticleKey = "sas:particle";
@@ -126,6 +127,7 @@ function addShovelLore(player) {
     }
 }
 system.runInterval(() => {
+    if (!on("autosmelt")) return;
     for (const player of world.getPlayers()) {
         if (isSmeltEnabled(player)) {
             const toolMode = getToolMode(player);
@@ -139,6 +141,7 @@ system.runInterval(() => {
     }
 }, 5);
 world.afterEvents.playerSpawn.subscribe((event) => {
+    if (!on("autosmelt")) return;
     const initialSpawn = event.initialSpawn;
     const player = event.player;
     const hasConfigTag = player.hasTag(configGivenTag);
@@ -161,7 +164,7 @@ world.afterEvents.playerSpawn.subscribe((event) => {
 });
 world.afterEvents.playerBreakBlock.subscribe((event) => {
     const { player, block, brokenBlockPermutation } = event;
-    if (!isSmeltEnabled(player))
+    if (!on("autosmelt") || !isSmeltEnabled(player))
         return;
     // Check activation mode
     const activationMode = getActivationMode(player);
