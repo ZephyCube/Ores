@@ -1,10 +1,12 @@
 // Simple AutoSmelt Main Script
 // Made by Rezn1r - https://mcpedl.com/simple-autosmelt/
 // License: MIT
-import { world, system, ItemStack, EntityComponentTypes } from "@minecraft/server";
+// ZephyCube Ores 1.4.0: adds /zc:as and a default of "on"; module "autosmelt" turns it all off.
+import { world, system, ItemStack, EntityComponentTypes, CommandPermissionLevel, CustomCommandStatus, CustomCommandParamType } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
 import { on } from "./features.js";
 const configGivenTag = "sas:config_given";
+const onTag = "sas_on"; // mirror of the setting as a tag, so other packs (vein miner) can read it
 const configDistanceKey = "sas:distance";
 const configParticleKey = "sas:particle";
 const configToolModeKey = "sas:tool_mode";
@@ -72,13 +74,19 @@ function scheduleDelayedSmelt(player, dimension, location, maxDistance) {
 }
 
 function isSmeltEnabled(player) {
-    const key = "sas:enabled";
-    const dynamicProperties = player.getDynamicProperty(key);
-    return dynamicProperties === true;
+    // on unless the player turned it off (settings from before the split are not kept, so the default is on)
+    return player.getDynamicProperty("sas:enabled") !== false;
 }
 function setSmeltEnabled(player, enabled) {
-    const key = "sas:enabled";
-    player.setDynamicProperty(key, enabled);
+    player.setDynamicProperty("sas:enabled", enabled);
+    syncTag(player);
+}
+function syncTag(player) {
+    try {
+        const want = isSmeltEnabled(player);
+        if (want && !player.hasTag(onTag)) player.addTag(onTag);
+        else if (!want && player.hasTag(onTag)) player.removeTag(onTag);
+    } catch { }
 }
 function isParticleEnabled(player) {
     const particle = player.getDynamicProperty(configParticleKey);
@@ -144,6 +152,7 @@ world.afterEvents.playerSpawn.subscribe((event) => {
     if (!on("autosmelt")) return;
     const initialSpawn = event.initialSpawn;
     const player = event.player;
+    syncTag(player);
     const hasConfigTag = player.hasTag(configGivenTag);
     if (initialSpawn && !hasConfigTag) {
         setSmeltEnabled(event.player, true);
@@ -260,4 +269,25 @@ const configComponent = {
 };
 system.beforeEvents.startup.subscribe((init) => {
     init.itemComponentRegistry.registerCustomComponent("sas:config_component", configComponent);
+    const run = (origin, arg) => {
+        if (!on("autosmelt")) return { status: CustomCommandStatus.Failure, message: "AutoSmelt is turned off by staff." };
+        const player = origin.sourceEntity;
+        if (!player || player.typeId !== "minecraft:player") return { status: CustomCommandStatus.Failure, message: "Players only." };
+        const a = String(arg ?? "").toLowerCase();
+        let state = isSmeltEnabled(player);
+        if (a === "on") state = true;
+        else if (a === "off") state = false;
+        else if (a === "status") { /* no change */ }
+        else if (a === "") state = !state;
+        else return { status: CustomCommandStatus.Failure, message: "Use /zc:as, /zc:as on, /zc:as off or /zc:as status. More settings: use the AutoSmelt Config item." };
+        if (a !== "status") system.run(() => setSmeltEnabled(player, state));
+        return { status: CustomCommandStatus.Success, message: `§7[§cAuto§eSmelt§7]§r ${state ? "§aon" : "§coff"}` };
+    };
+    init.customCommandRegistry.registerCommand({
+        name: "zc:as",
+        description: "AutoSmelt: toggle on/off (or on, off, status)",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        optionalParameters: [{ name: "state", type: CustomCommandParamType.String }],
+    }, run);
 });
