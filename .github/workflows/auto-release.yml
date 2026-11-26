@@ -37,13 +37,17 @@ jobs:
           build() {
             rm -rf build && mkdir -p build/src && git archive "$1" | tar -x -C build/src
             local name="$PACK-$2"
-            # Zip: behavior pack and resource pack folders. One .mcaddon per pack, tagged BP / RP.
-            (cd build/src && zip -qr "../$name.zip" "$PACK" $(ls -d "$PACK-RP" 2>/dev/null))
+            # Zip: every pack folder. One .mcaddon per pack: BP, RP and the optional AntiXray resource pack.
+            (cd build/src && zip -qr "../$name.zip" "$PACK" $(ls -d "$PACK-RP" "$PACK-AntiXray" 2>/dev/null))
             (cd build/src && zip -qr "../$name-BP.mcaddon" "$PACK")
             FILES=("build/$name.zip" "build/$name-BP.mcaddon")
             if [ -d "build/src/$PACK-RP" ]; then
               (cd build/src && zip -qr "../$name-RP.mcaddon" "$PACK-RP")
               FILES+=("build/$name-RP.mcaddon")
+            fi
+            if [ -d "build/src/$PACK-AntiXray" ]; then
+              (cd build/src && zip -qr "../$name-AntiXray.mcaddon" "$PACK-AntiXray")
+              FILES+=("build/$name-AntiXray.mcaddon")
             fi
           }
           declare -A SEEN=()
