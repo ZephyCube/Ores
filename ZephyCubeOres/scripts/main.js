@@ -2,7 +2,7 @@ import "./style.js";
 import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
 import { world, system } from '@minecraft/server';
 import { smeltAfterHammer } from './smelt.js';
-import { on, appliesIn } from './features.js';
+import { appliesIn } from './features.js';
 
 // ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to chunks the first time a player is near
 // them, so land that was explored before the change gets the same ore as new land. Overworld: only natural
@@ -139,7 +139,7 @@ function* worker() {
 }
 
 system.runInterval(() => {
-  if (!on("veins") || queue.length >= CONFIG.maxQueue) return;
+  if (queue.length >= CONFIG.maxQueue) return;
   const cands = [];
   for (const p of world.getAllPlayers()) {
     try {
@@ -202,7 +202,7 @@ function creative(p) {
 }
 
 world.beforeEvents.playerBreakBlock.subscribe((ev) => {
-  if (!CONFIG.doubleDrops || !on("double_drops")) return;
+  if (!CONFIG.doubleDrops) return;
   try {
     if (!appliesIn("drops", ev.block.dimension.id)) return;
     const id = ev.block.typeId;
@@ -233,7 +233,7 @@ function copyDrops(dim, loc, wanted, snap, budget) {
 }
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
-  if (!CONFIG.doubleDrops || !on("double_drops")) return;
+  if (!CONFIG.doubleDrops) return;
   try {
     const wanted = dropsFor(ev.brokenBlockPermutation.type.id);
     if (!wanted) return;
@@ -266,7 +266,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     let cx = 0, cy = 0, cz = 0;
     for (const b of m.blocks) { cx += b.x; cy += b.y; cz += b.z; }
     const center = { x: Math.floor(cx / m.blocks.length), y: Math.floor(cy / m.blocks.length), z: Math.floor(cz / m.blocks.length) };
-    if (CONFIG.doubleDrops && on("double_drops") && appliesIn("drops", m.d) && !m.silk && !creative(player)) {
+    if (CONFIG.doubleDrops && appliesIn("drops", m.d) && !m.silk && !creative(player)) {
       const snap = { ids: new Set(Array.isArray(m.before) ? m.before : []) };
       for (const b of m.blocks) {
         const wanted = dropsFor(String(b.id));
