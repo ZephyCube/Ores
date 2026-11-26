@@ -203,8 +203,8 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     const toolMode = getToolMode(player);
     // Check tool type based on block type and tool mode
     if (isOre) {
-        if (!heldItem || !heldItem.typeId.endsWith("_pickaxe"))
-            return;
+        if (!heldItem || !(heldItem.typeId.endsWith("_pickaxe") || heldItem.typeId.endsWith("_hammer")))
+            return; // hammers (ZephyCube Ores Hammers) count as pickaxes
         if (toolMode === "shovel")
             return; // pickaxe disabled
     }
@@ -299,3 +299,23 @@ system.beforeEvents.startup.subscribe((init) => {
         optionalParameters: [{ name: "state", type: CustomCommandParamType.String }],
     }, run);
 });
+
+// Called by main.js for the 8 extra blocks a hammer (ZephyCube Ores Hammers pack) breaks: same rules as a pickaxe break.
+export function smeltAfterHammer(player, dimension, location, blockIds) {
+    if (!on("autosmelt") || !isSmeltEnabled(player))
+        return;
+    const activationMode = getActivationMode(player);
+    if (activationMode === "sneak" && !player.isSneaking)
+        return;
+    if (activationMode === "stand" && player.isSneaking)
+        return;
+    if (getToolMode(player) === "shovel")
+        return;
+    if (!blockIds.some((id) => smeltableOres.includes(id)))
+        return;
+    for (const delay of [1, 3, 8]) {
+        system.runTimeout(() => {
+            try { if (player.isValid) smeltNearbyDrops(player, dimension, location, 3); } catch { }
+        }, delay);
+    }
+}

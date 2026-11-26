@@ -1,10 +1,12 @@
-// Simple Hammers (by Salas, v2.2.1), merged into this pack as the module "hammers".
+// ZephyCube Ores Hammers: Simple Hammers (by Salas, v2.2.1) as an optional pack next to ZephyCube Ores.
 // A hammer breaks the 3x3x1 area around the block it mines, on the side the player is facing.
-// Changes from the original: works in creative too (no durability loss and no drops there), the module can be turned
-// off with /zc:oresmodules (the hammer then breaks one block like a pickaxe), and the mined face is read from the
-// stable entityHitBlock event instead of the beta playerStartBreakingBlock event.
+// On or off = add or remove this pack (a script cannot remove recipes, so it is a pack of its own).
+// Changes from the original: works in creative too (no durability loss and no drops there), and the mined face is read
+// from the stable entityHitBlock event instead of the beta playerStartBreakingBlock event.
+// After breaking the 8 extra blocks it sends the script event "zc:hammer_mined" so ZephyCube Ores gives those blocks
+// double drops and AutoSmelt too (the middle block gets them the normal way):
+//   { p: player id, d: dimension id, silk, blocks: [{ x, y, z, id }], before: [item entity ids that were already there] }
 import { world, system, ItemComponentTypes, GameMode } from "@minecraft/server";
-import { on } from "./features.js";
 
 const NORTH_SOUTH = [[0, -1, 0], [-1, -1, 0], [-1, 0, 0], [-1, 1, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0], [1, -1, 0]];
 const EAST_WEST = [[0, -1, 0], [0, -1, 1], [0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 1, -1], [0, 0, -1], [0, -1, -1]];
@@ -46,7 +48,6 @@ system.beforeEvents.startup.subscribe((init) => {
   init.itemComponentRegistry.registerCustomComponent("simple_hammers:on_break", {
     onMineBlock: (ev, p) => {
       try {
-        if (!on("hammers")) return;
         const player = ev.source, block = ev.block;
         let item = ev.itemStack;
         if (player?.typeId !== "minecraft:player" || !item) return;
@@ -60,6 +61,10 @@ system.beforeEvents.startup.subscribe((init) => {
         const silk = ench?.getEnchantment("silk_touch"), fortune = ench?.getEnchantment("fortune");
         if (!creative) item = wear(player, item); // the mined block itself
         const dim = block.dimension;
+        const broken = [];
+        // item entities already lying around, so ZephyCube Ores does not double them
+        let before = [];
+        if (!creative) { try { before = dim.getEntities({ type: "minecraft:item", location: block.center(), maxDistance: 4 }).map((e) => e.id); } catch { } }
         for (const [x, y, z] of offsets) {
           if (!creative && !item) break; // the hammer broke
           const b = block.offset({ x, y, z });
@@ -71,6 +76,7 @@ system.beforeEvents.startup.subscribe((init) => {
           const id = b.typeId;
           const silkStack = silk && id !== "minecraft:budding_amethyst" ? b.getItemStack(1) : undefined;
           dim.runCommand(`fill ${bx} ${by} ${bz} ${bx} ${by} ${bz} air destroy`);
+          broken.push({ x: bx, y: by, z: bz, id });
           const center = { x: bx + 0.5, y: by + 0.5, z: bz + 0.5 };
           if (silkStack) {
             for (const e of dim.getEntitiesAtBlockLocation(center)) if (e.typeId === "minecraft:item" || e.typeId === "minecraft:xp_orb") e.remove();
@@ -83,6 +89,9 @@ system.beforeEvents.startup.subscribe((init) => {
             }
           }
           item = wear(player, item);
+        }
+        if (broken.length) {
+          try { system.sendScriptEvent("zc:hammer_mined", JSON.stringify({ p: player.id, d: dim.id, silk: !!silk, blocks: broken, before })); } catch { }
         }
       } catch { }
     },

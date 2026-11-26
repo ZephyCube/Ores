@@ -1,7 +1,7 @@
 import "./style.js";
 import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
-import './hammers.js'; // Simple Hammers (by Salas), the "hammers" module
 import { world, system } from '@minecraft/server';
+import { smeltAfterHammer } from './smelt.js';
 import { on, appliesIn } from './features.js';
 
 // ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to chunks the first time a player is near
@@ -250,3 +250,33 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
     }
   } catch { }
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// ZephyCube Ores Hammers (optional pack): a hammer breaks 8 extra blocks and reports them with the script event
+// "zc:hammer_mined". Those blocks get double drops and AutoSmelt like the middle block (which gets them the normal
+// way). Items that were already lying there ("before") are never doubled.
+system.afterEvents.scriptEventReceive.subscribe((ev) => {
+  if (ev.id !== "zc:hammer_mined") return;
+  try {
+    const m = JSON.parse(ev.message);
+    const dim = world.getDimension(m.d);
+    const player = world.getEntity(m.p);
+    if (!player || !Array.isArray(m.blocks) || !m.blocks.length) return;
+    const b0 = m.blocks[0];
+    let cx = 0, cy = 0, cz = 0;
+    for (const b of m.blocks) { cx += b.x; cy += b.y; cz += b.z; }
+    const center = { x: Math.floor(cx / m.blocks.length), y: Math.floor(cy / m.blocks.length), z: Math.floor(cz / m.blocks.length) };
+    if (CONFIG.doubleDrops && on("double_drops") && appliesIn("drops", m.d) && !m.silk && !creative(player)) {
+      const snap = { ids: new Set(Array.isArray(m.before) ? m.before : []) };
+      for (const b of m.blocks) {
+        const wanted = dropsFor(String(b.id));
+        if (!wanted) continue;
+        const loc = { x: b.x, y: b.y, z: b.z };
+        let left = CONFIG.maxDoubledPerBreak;
+        left -= copyDrops(dim, loc, wanted, snap, left);
+        system.runTimeout(() => { if (left > 0) left -= copyDrops(dim, loc, wanted, snap, left); }, 2);
+      }
+    }
+    smeltAfterHammer(player, dim, center, m.blocks.map((b) => String(b.id)));
+  } catch { }
+}, { namespaces: ["zc"] });

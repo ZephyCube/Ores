@@ -18,7 +18,6 @@ export const on = defineModules("wo", "zc:oresmodules", "Ores", [
   { key: "veins", label: "extra ore veins added to chunks near players (about double the vanilla amount)" },
   { key: "double_drops", label: "ores drop twice" },
   { key: "autosmelt", label: "AutoSmelt: smelts ore/sand drops automatically (/zc:as, config item, lore)" },
-  { key: "hammers", label: "Simple Hammers: hammers break 3x3x1 (off: they break one block like a pickaxe)" },
 ], [
   dimSwitch("veinsOverworld", "2x ores: Overworld", "Extra coal, iron, copper, gold, redstone, lapis and diamond veins"),
   dimSwitch("veinsNether", "2x ores: Nether", "Extra Nether quartz and Nether gold veins"),
