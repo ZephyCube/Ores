@@ -1,4 +1,4 @@
-# ZephyCube Ores 1.6.0
+# ZephyCube Ores 1.7.0
 
 ## Features (modules)
 `/zc:oresmodules` opens a menu with a switch per module and the dimension switches below (from the console it lists the modules); `/zc:oresmodules <module> on|off` also works. Saved in the world.
@@ -7,7 +7,6 @@
 | --- | --- |
 | `veins` | 2x ores: tops up chunks within 3 chunks of players, once per chunk per dimension. Overworld: extra veins in natural stone/deepslate (coal 20, iron 14, copper 8, gold 3, redstone 6, lapis 2, diamond 3 per chunk). Nether: extra veins in netherrack (Nether quartz 16, Nether gold 10 per chunk; ancient debris is left alone). Done chunks are saved in the world, so old land gets the same ore |
 | `double_drops` | 2x ore drops: ores broken by a player drop twice (not with Silk Touch, not in creative, max 8 item entities copied per ore) |
-| `hammers` | Simple Hammers (by Salas): stone, copper, iron, golden, diamond and netherite hammers (crafted like pickaxes with a full top row) break the 3x3x1 area around the mined block, facing the player. Silk Touch, Fortune and Unbreaking work. Also in creative (no wear, no drops). Off: the hammers still exist but break one block like a pickaxe |
 | `autosmelt` | AutoSmelt: ore and sand drops are smelted automatically for players who have it on (default on); `/zc:as`, the config item, lore on pickaxes and shovels |
 
 ## Where 2x ores and 2x ore drops apply
@@ -20,6 +19,12 @@ Five switches in the `/zc:oresmodules` menu, saved in the world property `wo:dim
 | 2x ancient debris: Nether (one large and one small vein per chunk, like vanilla; in netherrack, basalt and blackstone) | off |
 | 2x ore drops: Overworld (also covers the End) | on |
 | 2x ore drops: Nether | on |
+
+## Hammers (optional pack)
+`ZephyCubeOres-Hammers` is Simple Hammers by Salas: stone, copper, iron, golden, diamond and netherite hammers (crafted like pickaxes with a full top row) that break the 3x3x1 area around the mined block, facing the player.
+* Silk Touch, Fortune and Unbreaking work. Works in creative too (no wear, no drops).
+* All 9 blocks get 2x ore drops and AutoSmelt like a pickaxe break (the hammer pack reports the extra 8 blocks to Ores with the script event `zc:hammer_mined`). AutoSmelt counts a hammer as a pickaxe.
+* On or off: add the pack to the world to have hammers; remove it and the hammers and their recipes are gone (a script cannot remove a recipe, so they are a pack of their own). It needs the Ores resource pack for its textures and names.
 
 ## Anti-Xray (optional resource pack)
 `ZephyCubeOres-AntiXray` forces stone, deepslate, netherrack, ores, dirt, sand, gravel, logs and other natural blocks to render as solid blocks, so X-ray resource packs cannot see through them. Based on Anti Xray by PPYGaming (stairs, slabs, walls, moss carpet and sulfur spikes are left out because they would render as full blocks).
