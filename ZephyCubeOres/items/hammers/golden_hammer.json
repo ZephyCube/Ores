@@ -1,0 +1,64 @@
+{
+    "format_version": "1.21.90",
+    "minecraft:item": {
+        "description": {
+            "identifier": "simple_hammers:golden_hammer",
+            "menu_category": {
+                "category": "equipment",
+                "group": "simple_hammers:itemGroup.name.hammers"
+            }
+        },
+        "components": {
+            "minecraft:display_name": {
+                "value": "%item.simple_hammers.golden_hammer\n§7%tooltip.simple_hammers§r"
+            },
+            "minecraft:icon": "simple_gold_hammer",
+            "simple_hammers:on_break":{
+                "includeTags": ["stone_pick_diggable", "stone", "minecraft:stone_tier_destructible", "rail", "golden_pick_diggable", "minecraft:is_pickaxe_item_destructible"],
+                "excludeTags": ["minecraft:diamond_tier_destructible", "minecraft:iron_tier_destructible", "iron_pick_diggable", "mob_spawner"]
+            },
+            "minecraft:hand_equipped": true,
+            "minecraft:max_stack_size": 1,
+            "minecraft:durability": {
+                "damage_chance": {
+                    "min": 1,
+                    "max": 1
+                },
+                "max_durability": 79
+            },
+            "minecraft:enchantable": {
+                "slot": "pickaxe",
+                "value": 22
+            },
+            "minecraft:repairable": {
+                "repair_items": [
+                    {
+                        "items": ["minecraft:gold_ingot"],
+                        "repair_amount": "q.max_durability * 0.2"
+                    },
+                    {
+                        "items": ["simple_hammers:golden_hammer"],
+                        "repair_amount": "c.other->q.remaining_durability * 0.8"
+                    }
+                ]
+            },
+            "minecraft:damage": {
+                "value": 3
+            },
+            "minecraft:tags": {
+                "tags": ["minecraft:is_pickaxe","minecraft:golden_tier"]
+            },
+            "minecraft:digger": {
+                "use_efficiency": true,
+                "destroy_speeds": [
+                    {
+                        "block": {
+                            "tags": "query.any_tag( 'stone', 'minecraft:is_pickaxe_item_destructible' ) && !query.any_tag('minecraft:diamond_tier_destructible', 'minecraft:iron_tier_destructible', 'iron_pick_diggable')"
+                        },
+                        "speed": 10
+                    }
+                ]
+            }
+        }
+    }
+}

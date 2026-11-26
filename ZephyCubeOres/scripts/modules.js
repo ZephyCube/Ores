@@ -6,6 +6,7 @@
 // Operators only.
 // Optional extra switches (settings that are not a whole module) can be added to the same menu:
 //   defineModules(ns, command, title, defs, [{ label, tooltip, get: () => bool, set: (bool) => void }])
+// A module with defaultOff: true starts off until it is turned on (saved as "+key").
 import { world, system, CommandPermissionLevel, CustomCommandStatus, CustomCommandParamType } from "@minecraft/server";
 import { ModalFormData, FormCancelationReason } from "@minecraft/server-ui";
 
@@ -22,15 +23,22 @@ export async function showForm(player, form) {
 
 export function defineModules(ns, command, title, defs, extras = []) {
     const KEY = `${ns}:modules`;
-    const off = new Set();
+    const defaultOff = new Set(defs.filter((d) => d.defaultOff).map((d) => d.key));
+    const off = new Set(defaultOff);
     const known = new Set(defs.map((d) => d.key));
     system.run(() => {
         try {
             const s = world.getDynamicProperty(KEY);
-            if (typeof s === "string") for (const k of JSON.parse(s)) if (known.has(k)) off.add(k);
+            if (typeof s === "string") for (const k of JSON.parse(s)) {
+                if (known.has(k)) off.add(k);
+                else if (k.startsWith("+") && known.has(k.slice(1))) off.delete(k.slice(1));
+            }
         } catch { }
     });
-    const save = () => { try { world.setDynamicProperty(KEY, JSON.stringify([...off])); } catch { } };
+    const save = () => {
+        const v = [...[...off].filter((k) => !defaultOff.has(k)), ...[...defaultOff].filter((k) => !off.has(k)).map((k) => "+" + k)];
+        try { world.setDynamicProperty(KEY, JSON.stringify(v)); } catch { }
+    };
     const list = () => defs.map((d) => `§7- §f${d.key} ${off.has(d.key) ? "§coff" : "§aon"}§7: ${d.label}`).join("\n");
 
     async function openMenu(player) {

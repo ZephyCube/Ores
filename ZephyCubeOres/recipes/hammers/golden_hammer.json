@@ -1,0 +1,36 @@
+{
+    "format_version": "1.20.10",
+    "minecraft:recipe_shaped": {
+      "description": {
+      "identifier": "simple_hammers:golden_hammer"
+      },
+  
+      
+      "tags": [ "crafting_table" ],
+      "pattern": [
+        "XXX",
+        "X#X",
+        " # "
+      ],
+      "key": {
+        "#": {
+          "item": "minecraft:stick"
+        },
+        "X": {
+          "item": "minecraft:gold_ingot"
+        }
+      },
+      "unlock": [
+        {
+          "item": "minecraft:gold_ingot"
+        },
+        {
+          "item": "minecraft:raw_gold"
+        }
+      ],
+      "result": {
+        "item": "simple_hammers:golden_hammer"
+      }
+    }
+  }
+  
