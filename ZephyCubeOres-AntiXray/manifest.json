@@ -1,0 +1,35 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "ZephyCube Ores Anti-Xray",
+    "description": "Optional: forces stone, ores and other blocks to render as solid blocks, so X-ray resource packs cannot see through them. Based on Anti Xray by PPYGaming.",
+    "uuid": "09b5b540-f07f-52b9-8820-01c41e5cce9e",
+    "version": [
+      1,
+      5,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "a58b5530-fa45-506b-b7d0-323fbf90e564",
+      "version": [
+        1,
+        5,
+        0
+      ]
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "PPYGaming",
+      "ZephyCube"
+    ]
+  }
+}

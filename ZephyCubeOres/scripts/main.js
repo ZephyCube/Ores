@@ -1,11 +1,12 @@
 import "./style.js";
 import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
 import { world, system } from '@minecraft/server';
-import { on } from './features.js';
+import { on, appliesIn } from './features.js';
 
-// ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to Overworld chunks the first
-// time a player is near them, so land that was explored before the change gets the same ore as new land.
-// Only natural stone/deepslate is replaced. Each chunk is done once; the done-list is saved in the world.
+// ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to chunks the first time a player is near
+// them, so land that was explored before the change gets the same ore as new land. Overworld: only natural
+// stone/deepslate is replaced. Nether: only netherrack. Each chunk is done once per dimension; the done-list is saved
+// in the world. Which dimensions get extra veins and double drops is set in the /zc:oresmodules menu.
 const CONFIG = {
   radiusChunks: 3,          // chunks around each player that are topped up
   scanEveryTicks: 40,
@@ -23,15 +24,30 @@ const CONFIG = {
     { name: "diamond",  veins: 3,  size: 6,  minY: -64, maxY: 16  }
   ]
 };
-const DIM = "minecraft:overworld";
 const STONE = new Set(["minecraft:stone", "minecraft:andesite", "minecraft:diorite", "minecraft:granite", "minecraft:tuff"]);
 const DEEP = new Set(["minecraft:deepslate"]);
+// Nether: about the vanilla amount again of quartz and Nether gold (ancient debris is left alone)
+const NETHER_ORES = [
+  { block: "minecraft:quartz_ore",      veins: 16, size: 14, minY: 10, maxY: 117 },
+  { block: "minecraft:nether_gold_ore", veins: 10, size: 10, minY: 10, maxY: 117 }
+];
+// per dimension: done-list key prefix (the Overworld keeps the original one), ores, and which block becomes what
+const DIMS = {
+  "minecraft:overworld": {
+    prefix: "wo:r", ores: CONFIG.ores,
+    oreFor: (ore, id) => (DEEP.has(id) ? `minecraft:deepslate_${ore.name}_ore` : STONE.has(id) ? `minecraft:${ore.name}_ore` : undefined)
+  },
+  "minecraft:nether": {
+    prefix: "wo:rn", ores: NETHER_ORES,
+    oreFor: (ore, id) => (id === "minecraft:netherrack" ? ore.block : undefined)
+  }
+};
 
 // ---- done-list: one property per 32x32 chunk region, 1024 bits as 256 hex characters
 const regions = new Map();
-const rKey = (rx, rz) => `wo:r:${rx}:${rz}`;
-function region(rx, rz) {
-  const k = rKey(rx, rz);
+const rKey = (dimId, rx, rz) => `${DIMS[dimId].prefix}:${rx}:${rz}`;
+function region(dimId, rx, rz) {
+  const k = rKey(dimId, rx, rz);
   let r = regions.get(k);
   if (!r) {
     r = new Uint8Array(128);
@@ -44,16 +60,16 @@ function region(rx, rz) {
   return r;
 }
 const bitPos = (cx, cz) => ((cz & 31) << 5) | (cx & 31);
-function isDone(cx, cz) {
-  const r = region(cx >> 5, cz >> 5), b = bitPos(cx, cz);
+function isDone(dimId, cx, cz) {
+  const r = region(dimId, cx >> 5, cz >> 5), b = bitPos(cx, cz);
   return (r[b >> 3] & (1 << (b & 7))) !== 0;
 }
-function markDone(cx, cz) {
-  const rx = cx >> 5, rz = cz >> 5, r = region(rx, rz), b = bitPos(cx, cz);
+function markDone(dimId, cx, cz) {
+  const rx = cx >> 5, rz = cz >> 5, r = region(dimId, rx, rz), b = bitPos(cx, cz);
   r[b >> 3] |= 1 << (b & 7);
   let s = "";
   for (let i = 0; i < 128; i++) s += r[i].toString(16).padStart(2, "0");
-  try { world.setDynamicProperty(rKey(rx, rz), s); } catch { }
+  try { world.setDynamicProperty(rKey(dimId, rx, rz), s); } catch { }
 }
 
 const queue = [];
@@ -68,8 +84,9 @@ function loaded(dim, cx, cz) {
 
 function* topUp(dim, cx, cz) {
   const hr = dim.heightRange;
+  const d = DIMS[dim.id];
   let ops = 0;
-  for (const ore of CONFIG.ores) {
+  for (const ore of d.ores) {
     const lo = Math.max(hr.min, ore.minY), hi = Math.min(hr.max - 1, ore.maxY);
     for (let v = 0; v < ore.veins; v++) {
       let x = cx * 16 + Math.floor(Math.random() * 16);
@@ -79,7 +96,8 @@ function* topUp(dim, cx, cz) {
         try {
           const b = dim.getBlock({ x, y, z });
           const id = b?.typeId;
-          if (id && (STONE.has(id) || DEEP.has(id))) b.setType(DEEP.has(id) ? `minecraft:deepslate_${ore.name}_ore` : `minecraft:${ore.name}_ore`);
+          const to = id && d.oreFor(ore, id);
+          if (to) b.setType(to);
         } catch { }
         x = Math.min(cx * 16 + 15, Math.max(cx * 16, x + Math.floor(Math.random() * 3) - 1));
         y = Math.min(hi, Math.max(lo, y + Math.floor(Math.random() * 3) - 1));
@@ -92,15 +110,16 @@ function* topUp(dim, cx, cz) {
 
 function* worker() {
   while (queue.length) {
-    const { cx, cz } = queue.shift();
-    queued.delete(cx + "," + cz);
+    const { d: dimId, cx, cz } = queue.shift();
+    queued.delete(`${dimId}|${cx},${cz}`);
     try {
-      const dim = world.getDimension(DIM);
-      if (isDone(cx, cz) || !loaded(dim, cx, cz)) continue;
+      if (!appliesIn("veins", dimId)) continue;
+      const dim = world.getDimension(dimId);
+      if (isDone(dimId, cx, cz) || !loaded(dim, cx, cz)) continue;
       yield* topUp(dim, cx, cz);
-      markDone(cx, cz);
+      markDone(dimId, cx, cz);
       if (++doneCount % 100 === 0) console.warn(`[Ores] ${doneCount} chunks topped up since start`);
-    } catch (e) { console.warn(`[Ores] chunk ${cx},${cz}: ${e}`); }
+    } catch (e) { console.warn(`[Ores] chunk ${cx},${cz} (${dimId}): ${e}`); }
     yield;
   }
   running = false;
@@ -111,23 +130,24 @@ system.runInterval(() => {
   const cands = [];
   for (const p of world.getAllPlayers()) {
     try {
-      if (p.dimension.id !== DIM) continue;
+      const dimId = p.dimension.id;
+      if (!DIMS[dimId] || !appliesIn("veins", dimId)) continue;
       const pcx = Math.floor(p.location.x / 16), pcz = Math.floor(p.location.z / 16);
       for (let dx = -CONFIG.radiusChunks; dx <= CONFIG.radiusChunks; dx++) {
         for (let dz = -CONFIG.radiusChunks; dz <= CONFIG.radiusChunks; dz++) {
           const cx = pcx + dx, cz = pcz + dz;
-          if (queued.has(cx + "," + cz) || isDone(cx, cz)) continue;
-          cands.push({ cx, cz, d: dx * dx + dz * dz });
+          if (queued.has(`${dimId}|${cx},${cz}`) || isDone(dimId, cx, cz)) continue;
+          cands.push({ dimId, cx, cz, dist: dx * dx + dz * dz });
         }
       }
     } catch { }
   }
-  cands.sort((a, b) => a.d - b.d);
+  cands.sort((a, b) => a.dist - b.dist);
   for (const c of cands) {
     if (queue.length >= CONFIG.maxQueue) break;
-    const k = c.cx + "," + c.cz;
+    const k = `${c.dimId}|${c.cx},${c.cz}`;
     if (queued.has(k)) continue;
-    queued.add(k); queue.push({ cx: c.cx, cz: c.cz });
+    queued.add(k); queue.push({ d: c.dimId, cx: c.cx, cz: c.cz });
   }
   if (queue.length && !running) { running = true; system.runJob(worker()); }
 }, CONFIG.scanEveryTicks);
@@ -168,6 +188,7 @@ function creative(p) {
 world.beforeEvents.playerBreakBlock.subscribe((ev) => {
   if (!CONFIG.doubleDrops || !on("double_drops")) return;
   try {
+    if (!appliesIn("drops", ev.block.dimension.id)) return;
     const id = ev.block.typeId;
     if (!dropsFor(id)) return;
     const ids = new Set();
@@ -201,6 +222,7 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
     const wanted = dropsFor(ev.brokenBlockPermutation.type.id);
     if (!wanted) return;
     const dim = ev.block.dimension, loc = ev.block.location, k = bkey(dim, loc);
+    if (!appliesIn("drops", dim.id)) return;
     const snap = snapshots.get(k) ?? { ids: new Set() };
     snapshots.delete(k);
     if (creative(ev.player) || hasSilk(ev.itemStackAfterBreak)) return;
