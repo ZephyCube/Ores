@@ -3,7 +3,7 @@ import { defineModules } from "./modules.js";
 
 // Where the 2x ores (extra veins) and the 2x ore drops apply. Saved in the world property wo:dims.
 const DKEY = "wo:dims";
-const dims = { veinsOverworld: true, veinsNether: false, dropsOverworld: true, dropsNether: true };
+const dims = { veinsOverworld: true, veinsNether: false, debrisNether: false, dropsOverworld: true, dropsNether: true };
 system.run(() => {
   try {
     const o = JSON.parse(world.getDynamicProperty(DKEY) ?? "{}");
@@ -18,16 +18,19 @@ export const on = defineModules("wo", "zc:oresmodules", "Ores", [
   { key: "veins", label: "extra ore veins added to chunks near players (about double the vanilla amount)" },
   { key: "double_drops", label: "ores drop twice" },
   { key: "autosmelt", label: "AutoSmelt: smelts ore/sand drops automatically (/zc:as, config item, lore)" },
+  { key: "hammers", label: "Simple Hammers: hammers break 3x3x1 (off: they break one block like a pickaxe)" },
 ], [
   dimSwitch("veinsOverworld", "2x ores: Overworld", "Extra coal, iron, copper, gold, redstone, lapis and diamond veins"),
   dimSwitch("veinsNether", "2x ores: Nether", "Extra Nether quartz and Nether gold veins"),
+  dimSwitch("debrisNether", "2x ancient debris: Nether", "Extra ancient debris (one large and one small vein per chunk, like vanilla)"),
   dimSwitch("dropsOverworld", "2x ore drops: Overworld", "Ores broken in the Overworld (and the End) drop twice"),
   dimSwitch("dropsNether", "2x ore drops: Nether", "Ores broken in the Nether drop twice"),
 ]);
 
-// true when the feature ("veins" or "drops") applies in that dimension
+// true when the feature ("veins", "debris" or "drops") applies in that dimension
 export function appliesIn(feature, dimId) {
   const nether = dimId === "minecraft:nether";
-  return feature === "veins" ? (nether ? dims.veinsNether : dimId === "minecraft:overworld" && dims.veinsOverworld)
-    : (nether ? dims.dropsNether : dims.dropsOverworld);
+  if (feature === "debris") return nether && dims.debrisNether;
+  if (feature === "veins") return nether ? dims.veinsNether : dimId === "minecraft:overworld" && dims.veinsOverworld;
+  return nether ? dims.dropsNether : dims.dropsOverworld;
 }

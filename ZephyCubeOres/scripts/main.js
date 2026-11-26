@@ -1,5 +1,6 @@
 import "./style.js";
 import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
+import './hammers.js'; // Simple Hammers (by Salas), the "hammers" module
 import { world, system } from '@minecraft/server';
 import { on, appliesIn } from './features.js';
 
@@ -31,23 +32,34 @@ const NETHER_ORES = [
   { block: "minecraft:quartz_ore",      veins: 16, size: 14, minY: 10, maxY: 117 },
   { block: "minecraft:nether_gold_ore", veins: 10, size: 10, minY: 10, maxY: 117 }
 ];
-// per dimension: done-list key prefix (the Overworld keeps the original one), ores, and which block becomes what
-const DIMS = {
-  "minecraft:overworld": {
-    prefix: "wo:r", ores: CONFIG.ores,
+// 2x ancient debris (its own switch): the vanilla amount again, one large and one small vein per chunk
+const DEBRIS_ORES = [
+  { block: "minecraft:ancient_debris", veins: 1, size: 3, minY: 8, maxY: 24 },
+  { block: "minecraft:ancient_debris", veins: 1, size: 2, minY: 8, maxY: 119 }
+];
+const DEBRIS_HOST = new Set(["minecraft:netherrack", "minecraft:basalt", "minecraft:blackstone"]);
+// jobs: dimension, switch, done-list key prefix (the Overworld keeps the original one), ores, and which block becomes what.
+// Each job has its own done-list, so turning a switch on later still tops up chunks other jobs already did.
+const JOBS = {
+  overworld: {
+    dim: "minecraft:overworld", sw: "veins", prefix: "wo:r", ores: CONFIG.ores,
     oreFor: (ore, id) => (DEEP.has(id) ? `minecraft:deepslate_${ore.name}_ore` : STONE.has(id) ? `minecraft:${ore.name}_ore` : undefined)
   },
-  "minecraft:nether": {
-    prefix: "wo:rn", ores: NETHER_ORES,
+  nether: {
+    dim: "minecraft:nether", sw: "veins", prefix: "wo:rn", ores: NETHER_ORES,
     oreFor: (ore, id) => (id === "minecraft:netherrack" ? ore.block : undefined)
+  },
+  debris: {
+    dim: "minecraft:nether", sw: "debris", prefix: "wo:rd", ores: DEBRIS_ORES,
+    oreFor: (ore, id) => (DEBRIS_HOST.has(id) ? ore.block : undefined)
   }
 };
 
 // ---- done-list: one property per 32x32 chunk region, 1024 bits as 256 hex characters
 const regions = new Map();
-const rKey = (dimId, rx, rz) => `${DIMS[dimId].prefix}:${rx}:${rz}`;
-function region(dimId, rx, rz) {
-  const k = rKey(dimId, rx, rz);
+const rKey = (job, rx, rz) => `${JOBS[job].prefix}:${rx}:${rz}`;
+function region(job, rx, rz) {
+  const k = rKey(job, rx, rz);
   let r = regions.get(k);
   if (!r) {
     r = new Uint8Array(128);
@@ -60,16 +72,16 @@ function region(dimId, rx, rz) {
   return r;
 }
 const bitPos = (cx, cz) => ((cz & 31) << 5) | (cx & 31);
-function isDone(dimId, cx, cz) {
-  const r = region(dimId, cx >> 5, cz >> 5), b = bitPos(cx, cz);
+function isDone(job, cx, cz) {
+  const r = region(job, cx >> 5, cz >> 5), b = bitPos(cx, cz);
   return (r[b >> 3] & (1 << (b & 7))) !== 0;
 }
-function markDone(dimId, cx, cz) {
-  const rx = cx >> 5, rz = cz >> 5, r = region(dimId, rx, rz), b = bitPos(cx, cz);
+function markDone(job, cx, cz) {
+  const rx = cx >> 5, rz = cz >> 5, r = region(job, rx, rz), b = bitPos(cx, cz);
   r[b >> 3] |= 1 << (b & 7);
   let s = "";
   for (let i = 0; i < 128; i++) s += r[i].toString(16).padStart(2, "0");
-  try { world.setDynamicProperty(rKey(dimId, rx, rz), s); } catch { }
+  try { world.setDynamicProperty(rKey(job, rx, rz), s); } catch { }
 }
 
 const queue = [];
@@ -82,9 +94,9 @@ function loaded(dim, cx, cz) {
   catch { return false; }
 }
 
-function* topUp(dim, cx, cz) {
+function* topUp(dim, job, cx, cz) {
   const hr = dim.heightRange;
-  const d = DIMS[dim.id];
+  const d = JOBS[job];
   let ops = 0;
   for (const ore of d.ores) {
     const lo = Math.max(hr.min, ore.minY), hi = Math.min(hr.max - 1, ore.maxY);
@@ -110,16 +122,17 @@ function* topUp(dim, cx, cz) {
 
 function* worker() {
   while (queue.length) {
-    const { d: dimId, cx, cz } = queue.shift();
-    queued.delete(`${dimId}|${cx},${cz}`);
+    const { job, cx, cz } = queue.shift();
+    queued.delete(`${job}|${cx},${cz}`);
     try {
-      if (!appliesIn("veins", dimId)) continue;
-      const dim = world.getDimension(dimId);
-      if (isDone(dimId, cx, cz) || !loaded(dim, cx, cz)) continue;
-      yield* topUp(dim, cx, cz);
-      markDone(dimId, cx, cz);
+      const j = JOBS[job];
+      if (!appliesIn(j.sw, j.dim)) continue;
+      const dim = world.getDimension(j.dim);
+      if (isDone(job, cx, cz) || !loaded(dim, cx, cz)) continue;
+      yield* topUp(dim, job, cx, cz);
+      markDone(job, cx, cz);
       if (++doneCount % 100 === 0) console.warn(`[Ores] ${doneCount} chunks topped up since start`);
-    } catch (e) { console.warn(`[Ores] chunk ${cx},${cz} (${dimId}): ${e}`); }
+    } catch (e) { console.warn(`[Ores] chunk ${cx},${cz} (${job}): ${e}`); }
     yield;
   }
   running = false;
@@ -131,13 +144,16 @@ system.runInterval(() => {
   for (const p of world.getAllPlayers()) {
     try {
       const dimId = p.dimension.id;
-      if (!DIMS[dimId] || !appliesIn("veins", dimId)) continue;
+      const jobs = Object.keys(JOBS).filter((k) => JOBS[k].dim === dimId && appliesIn(JOBS[k].sw, dimId));
+      if (!jobs.length) continue;
       const pcx = Math.floor(p.location.x / 16), pcz = Math.floor(p.location.z / 16);
       for (let dx = -CONFIG.radiusChunks; dx <= CONFIG.radiusChunks; dx++) {
         for (let dz = -CONFIG.radiusChunks; dz <= CONFIG.radiusChunks; dz++) {
           const cx = pcx + dx, cz = pcz + dz;
-          if (queued.has(`${dimId}|${cx},${cz}`) || isDone(dimId, cx, cz)) continue;
-          cands.push({ dimId, cx, cz, dist: dx * dx + dz * dz });
+          for (const job of jobs) {
+            if (queued.has(`${job}|${cx},${cz}`) || isDone(job, cx, cz)) continue;
+            cands.push({ job, cx, cz, dist: dx * dx + dz * dz });
+          }
         }
       }
     } catch { }
@@ -145,9 +161,9 @@ system.runInterval(() => {
   cands.sort((a, b) => a.dist - b.dist);
   for (const c of cands) {
     if (queue.length >= CONFIG.maxQueue) break;
-    const k = `${c.dimId}|${c.cx},${c.cz}`;
+    const k = `${c.job}|${c.cx},${c.cz}`;
     if (queued.has(k)) continue;
-    queued.add(k); queue.push({ d: c.dimId, cx: c.cx, cz: c.cz });
+    queued.add(k); queue.push({ job: c.job, cx: c.cx, cz: c.cz });
   }
   if (queue.length && !running) { running = true; system.runJob(worker()); }
 }, CONFIG.scanEveryTicks);

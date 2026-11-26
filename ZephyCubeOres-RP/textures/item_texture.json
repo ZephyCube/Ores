@@ -4,6 +4,24 @@
   "texture_data": {
     "sas:config": {
       "textures": "textures/items/config"
+    },
+    "simple_stone_hammer": {
+      "textures": "textures/items/simple_hammers/simple_stone_hammer.png"
+    },
+    "simple_gold_hammer": {
+      "textures": "textures/items/simple_hammers/simple_gold_hammer.png"
+    },
+    "simple_copper_hammer": {
+      "textures": "textures/items/simple_hammers/simple_copper_hammer.png"
+    },
+    "simple_iron_hammer": {
+      "textures": "textures/items/simple_hammers/simple_iron_hammer.png"
+    },
+    "simple_diamond_hammer": {
+      "textures": "textures/items/simple_hammers/simple_diamond_hammer.png"
+    },
+    "simple_netherite_hammer": {
+      "textures": "textures/items/simple_hammers/simple_netherite_hammer.png"
     }
   }
 }

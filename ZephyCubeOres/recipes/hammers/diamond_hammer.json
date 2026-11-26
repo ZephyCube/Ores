@@ -1,0 +1,33 @@
+{
+    "format_version": "1.20.10",
+    "minecraft:recipe_shaped": {
+      "description": {
+      "identifier": "simple_hammers:diamond_hammer"
+      },
+  
+      
+      "tags": [ "crafting_table" ],
+      "pattern": [
+        "XXX",
+        "X#X",
+        " # "
+      ],
+      "key": {
+        "#": {
+          "item": "minecraft:stick"
+        },
+        "X": {
+          "item": "minecraft:diamond"
+        }
+      },
+      "unlock": [
+        {
+          "item": "minecraft:diamond"
+        }
+      ],
+      "result": {
+        "item": "simple_hammers:diamond_hammer"
+      }
+    }
+  }
+  

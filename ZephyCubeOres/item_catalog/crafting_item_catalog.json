@@ -1,0 +1,26 @@
+{
+    "format_version": "1.21.60",
+    "minecraft:crafting_items_catalog": {
+       "categories": [
+            {
+                "category_name": "equipment",
+                "groups": [
+                    {
+                        "group_identifier": {
+                            "icon": "simple_hammers:stone_hammer",
+                            "name": "simple_hammers:itemGroup.name.hammers"
+                        },
+                        "items": [
+                            "simple_hammers:stone_hammer",
+                            "simple_hammers:copper_hammer",
+                            "simple_hammers:iron_hammer",
+                            "simple_hammers:golden_hammer",
+                            "simple_hammers:diamond_hammer",
+                            "simple_hammers:netherite_hammer"
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

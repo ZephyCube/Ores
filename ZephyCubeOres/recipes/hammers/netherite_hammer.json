@@ -1,0 +1,14 @@
+{
+    "format_version": "1.20.10",
+    "minecraft:recipe_smithing_transform": {
+      "description": {
+        "identifier": "simple_hammers:smithing_netherite_hammer"
+      },
+      "tags": [ "smithing_table" ],
+      "template": "minecraft:netherite_upgrade_smithing_template",
+      "base": "simple_hammers:diamond_hammer",
+      "addition": "minecraft:netherite_ingot",
+      "result": "simple_hammers:netherite_hammer"
+    }
+  }
+  

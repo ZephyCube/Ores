@@ -1,4 +1,4 @@
-# ZephyCube Ores 1.5.0
+# ZephyCube Ores 1.6.0
 
 ## Features (modules)
 `/zc:oresmodules` opens a menu with a switch per module and the dimension switches below (from the console it lists the modules); `/zc:oresmodules <module> on|off` also works. Saved in the world.
@@ -7,15 +7,17 @@
 | --- | --- |
 | `veins` | 2x ores: tops up chunks within 3 chunks of players, once per chunk per dimension. Overworld: extra veins in natural stone/deepslate (coal 20, iron 14, copper 8, gold 3, redstone 6, lapis 2, diamond 3 per chunk). Nether: extra veins in netherrack (Nether quartz 16, Nether gold 10 per chunk; ancient debris is left alone). Done chunks are saved in the world, so old land gets the same ore |
 | `double_drops` | 2x ore drops: ores broken by a player drop twice (not with Silk Touch, not in creative, max 8 item entities copied per ore) |
+| `hammers` | Simple Hammers (by Salas): stone, copper, iron, golden, diamond and netherite hammers (crafted like pickaxes with a full top row) break the 3x3x1 area around the mined block, facing the player. Silk Touch, Fortune and Unbreaking work. Also in creative (no wear, no drops). Off: the hammers still exist but break one block like a pickaxe |
 | `autosmelt` | AutoSmelt: ore and sand drops are smelted automatically for players who have it on (default on); `/zc:as`, the config item, lore on pickaxes and shovels |
 
 ## Where 2x ores and 2x ore drops apply
-Four switches in the `/zc:oresmodules` menu, saved in the world property `wo:dims`:
+Five switches in the `/zc:oresmodules` menu, saved in the world property `wo:dims`:
 
 | Switch | Default |
 | --- | --- |
 | 2x ores: Overworld | on |
 | 2x ores: Nether | off |
+| 2x ancient debris: Nether (one large and one small vein per chunk, like vanilla; in netherrack, basalt and blackstone) | off |
 | 2x ore drops: Overworld (also covers the End) | on |
 | 2x ore drops: Nether | on |
 
@@ -46,7 +48,7 @@ It is a resource pack, so the server cannot switch it on or off with a command: 
 | `sas_on` | Set while AutoSmelt is on for the player (the vein miner in BedrockEssentials reads it) |
 
 ## Storage
-World properties `wo:r:<rx>:<rz>` and `wo:rn:<rx>:<rz>` (done chunks, Overworld and Nether), `wo:dims` (dimension switches), `wo:modules`; per-player properties `sas:*`.
+World properties `wo:r:<rx>:<rz>`, `wo:rn:<rx>:<rz>` and `wo:rd:<rx>:<rz>` (done chunks: Overworld, Nether, ancient debris; each switch has its own list, so turning one on later still tops up old land), `wo:dims` (dimension switches), `wo:modules`; per-player properties `sas:*`.
 
 ## License
 AutoSmelt is based on Simple AutoSmelt by Rezn1r (MIT). The notice is kept in `scripts/smelt.js`.

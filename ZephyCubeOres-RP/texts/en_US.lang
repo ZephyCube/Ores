@@ -1,6 +1,16 @@
 pack.name=ZephyCube Ores RP
-pack.description=AutoSmelt config item texture and texts
+pack.description=AutoSmelt config item and Simple Hammers textures and texts
 
 item.sas:config.name=§6AutoSmelt Config
 item.sas:config.given=You received the §pAutoSmelt Config§f. Right-click it for settings, or type §p/as§f to turn AutoSmelt on or off.
 item.sas:config.saved=AutoSmelt settings saved.
+
+## Simple Hammers (by Salas)
+item.simple_hammers.stone_hammer=Stone Hammer
+item.simple_hammers.copper_hammer=Copper Hammer
+item.simple_hammers.iron_hammer=Iron Hammer
+item.simple_hammers.golden_hammer=Golden Hammer
+item.simple_hammers.diamond_hammer=Diamond Hammer
+item.simple_hammers.netherite_hammer=Netherite Hammer
+simple_hammers:itemGroup.name.hammers=Hammers
+tooltip.simple_hammers=Breaks a 3x3x1 area
