@@ -33,17 +33,23 @@ jobs:
         run: |
           set -euo pipefail
           PACK=ZephyCubeOres
+          LEGACY= # the pack folder's old name; commits from before the rename are built under the new name
           # Builds the release files of commit $1 for tag $2 into build/ and lists them in FILES.
           build() {
             rm -rf build && mkdir -p build/src && git archive "$1" | tar -x -C build/src
+            if [ -n "$LEGACY" ] && [ ! -d "build/src/$PACK" ] && [ -d "build/src/$LEGACY" ]; then mv "build/src/$LEGACY" "build/src/$PACK"; fi
             local name="$PACK-$2"
-            # Zip: every pack folder. One .mcaddon per pack: BP, RP and the optional AntiXray resource pack.
-            (cd build/src && zip -qr "../$name.zip" "$PACK" $(ls -d "$PACK-RP" "$PACK-AntiXray" 2>/dev/null))
+            # Zip: every pack folder. One .mcaddon per pack: BP, RP and the optional Hammers and AntiXray packs.
+            (cd build/src && zip -qr "../$name.zip" "$PACK" $(ls -d "$PACK-RP" "$PACK-AntiXray" "$PACK-Hammers" 2>/dev/null))
             (cd build/src && zip -qr "../$name-BP.mcaddon" "$PACK")
             FILES=("build/$name.zip" "build/$name-BP.mcaddon")
             if [ -d "build/src/$PACK-RP" ]; then
               (cd build/src && zip -qr "../$name-RP.mcaddon" "$PACK-RP")
               FILES+=("build/$name-RP.mcaddon")
+            fi
+            if [ -d "build/src/$PACK-Hammers" ]; then
+              (cd build/src && zip -qr "../$name-Hammers.mcaddon" "$PACK-Hammers")
+              FILES+=("build/$name-Hammers.mcaddon")
             fi
             if [ -d "build/src/$PACK-AntiXray" ]; then
               (cd build/src && zip -qr "../$name-AntiXray.mcaddon" "$PACK-AntiXray")
@@ -52,7 +58,7 @@ jobs:
           }
           declare -A SEEN=()
           for sha in $(git rev-list --reverse HEAD); do
-            VERSION=$(git show "$sha:$PACK/manifest.json" 2>/dev/null \
+            VERSION=$({ git show "$sha:$PACK/manifest.json" 2>/dev/null || { [ -n "$LEGACY" ] && git show "$sha:$LEGACY/manifest.json" 2>/dev/null; }; } \
               | jq -r '.header.version | map(tostring) | join(".")') || continue
             [ -n "$VERSION" ] || continue
             TAG="v$VERSION"
@@ -63,6 +69,7 @@ jobs:
               echo "Rebuilding files of $TAG from $sha"
               build "$sha" "$TAG"
               gh release upload "$TAG" "${FILES[@]}" --clobber
+              gh release edit "$TAG" --title "$PACK $TAG" >/dev/null
               KEEP=$(printf '%s\n' "${FILES[@]##*/}")
               gh release view "$TAG" --json assets -q '.assets[].name' | while read -r a; do
                 grep -qxF "$a" <<<"$KEEP" || gh release delete-asset "$TAG" "$a" -y
