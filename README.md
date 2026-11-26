@@ -1,6 +1,6 @@
 <p align="center"><img src="logo.png" alt="ZephyCube" width="160"></p>
 
-# ZephyCubeOres v1.7.0
+# ZephyCubeOres v1.7.1
 
 Extra ore veins (about double the vanilla amount) in the Overworld and Nether, double ore drops (not with Silk Touch) and AutoSmelt. No Beta APIs.
 
@@ -11,27 +11,21 @@ Extra ore veins (about double the vanilla amount) in the Overworld and Nether, d
 
 ## Install
 
-Download `ZephyCubeOres-v1.7.0-BP.mcaddon` (behavior pack) and `ZephyCubeOres-v1.7.0-RP.mcaddon` (resource pack) from the Releases page and open both. Or install by hand: copy the `ZephyCubeOres` folder into your world's `behavior_packs` folder and `ZephyCubeOres-RP` into `resource_packs`, then add each pack's `uuid` and `version` (from its `manifest.json`) to the world's `world_behavior_packs.json` / `world_resource_packs.json`. Optional: `ZephyCubeOres-v1.7.0-Hammers.mcaddon` (or the `ZephyCubeOres-Hammers` folder in `behavior_packs`) adds Simple Hammers; remove it to remove the hammers and their recipes. Optional: `ZephyCubeOres-v1.7.0-AntiXray.mcaddon` (or the `ZephyCubeOres-AntiXray` folder in `resource_packs`) turns Anti-Xray on; remove it to turn it off. Needs `@minecraft/server` 2.8.0 and `@minecraft/server-ui` 2.0.0.
+Download `ZephyCubeOres-v1.7.1-BP.mcaddon` (behavior pack) and `ZephyCubeOres-v1.7.1-RP.mcaddon` (resource pack) from the Releases page and open both. Or install by hand: copy the `ZephyCubeOres` folder into your world's `behavior_packs` folder and `ZephyCubeOres-RP` into `resource_packs`, then add each pack's `uuid` and `version` (from its `manifest.json`) to the world's `world_behavior_packs.json` / `world_resource_packs.json`. Optional: `ZephyCubeOres-v1.7.1-Hammers.mcaddon` (or the `ZephyCubeOres-Hammers` folder in `behavior_packs`) adds Simple Hammers; remove it to remove the hammers and their recipes. Optional: `ZephyCubeOres-v1.7.1-AntiXray.mcaddon` (or the `ZephyCubeOres-AntiXray` folder in `resource_packs`) turns Anti-Xray on; remove it to turn it off. Needs `@minecraft/server` 2.8.0 and `@minecraft/server-ui` 2.0.0.
 
-## Features (modules)
-`/zc:oresmodules` opens a menu with a switch per module and the dimension switches below (from the console it lists the modules); `/zc:oresmodules <module> on|off` also works. Saved in the world.
+## Features (switches)
+`/zc:oresmodules` opens a menu with one switch each (from the console it lists them); `/zc:oresmodules <switch> on|off` also works. Saved in the world.
 
-| Module | What it does |
-| --- | --- |
-| `veins` | 2x ores: tops up chunks within 3 chunks of players, once per chunk per dimension. Overworld: extra veins in natural stone/deepslate (coal 20, iron 14, copper 8, gold 3, redstone 6, lapis 2, diamond 3 per chunk). Nether: extra veins in netherrack (Nether quartz 16, Nether gold 10 per chunk; ancient debris is left alone). Done chunks are saved in the world, so old land gets the same ore |
-| `double_drops` | 2x ore drops: ores broken by a player drop twice (not with Silk Touch, not in creative, max 8 item entities copied per ore) |
-| `autosmelt` | AutoSmelt: ore and sand drops are smelted automatically for players who have it on (default on); `/zc:as`, the config item, lore on pickaxes and shovels |
+| Menu name | Switch | Default | What it does |
+| --- | --- | --- | --- |
+| 2x ores: Overworld | `ores_overworld` | on | Tops up Overworld chunks within 3 chunks of players, once per chunk, with extra veins in natural stone/deepslate: coal 20, iron 14, copper 8, gold 3, redstone 6, lapis 2, diamond 3 per chunk (about double the vanilla amount). Done chunks are saved, so old land gets the same ore |
+| 2x ores: Nether | `ores_nether` | off | The same in the Nether, in netherrack: Nether quartz 16, Nether gold 10 per chunk |
+| 2x ancient debris: Nether | `debris_nether` | off | One large and one small ancient debris vein per Nether chunk, like vanilla, in netherrack, basalt and blackstone |
+| 2x ore drops: Overworld | `drops_overworld` | on | Ores broken by a player in the Overworld (and the End) drop twice (not with Silk Touch, not in creative, max 8 item entities copied per ore) |
+| 2x ore drops: Nether | `drops_nether` | on | The same in the Nether |
+| AutoSmelt | `autosmelt` | on | Ore and sand drops are smelted automatically for players who have it on (default on); `/zc:as`, the config item, lore on pickaxes and shovels |
 
-## Where 2x ores and 2x ore drops apply
-Five switches in the `/zc:oresmodules` menu, saved in the world property `wo:dims`:
-
-| Switch | Default |
-| --- | --- |
-| 2x ores: Overworld | on |
-| 2x ores: Nether | off |
-| 2x ancient debris: Nether (one large and one small vein per chunk, like vanilla; in netherrack, basalt and blackstone) | off |
-| 2x ore drops: Overworld (also covers the End) | on |
-| 2x ore drops: Nether | on |
+Worlds from 1.5.0 to 1.7.0 keep their settings: the old `veins` and `double_drops` switches and the dimension switches are moved over once, with the same effect.
 
 ## Hammers (optional pack)
 `ZephyCubeOres-Hammers` is Simple Hammers by Salas: stone, copper, iron, golden, diamond and netherite hammers (crafted like pickaxes with a full top row) that break the 3x3x1 area around the mined block, facing the player.
@@ -57,7 +51,7 @@ It is a resource pack, so the server cannot switch it on or off with a command: 
 | Command | Who | Use |
 | --- | --- | --- |
 | `/zc:as [on\|off\|status]` | everyone | Your AutoSmelt on or off |
-| `/zc:oresmodules [module] [on\|off]` | operators | Open the modules and dimensions menu, or turn one module on or off |
+| `/zc:oresmodules [switch] [on\|off]` | operators | Open the switches menu, or turn one switch on or off |
 
 ## Tags
 | Tag | Effect |
@@ -66,7 +60,7 @@ It is a resource pack, so the server cannot switch it on or off with a command: 
 | `sas_on` | Set while AutoSmelt is on for the player (the vein miner in BedrockEssentials reads it) |
 
 ## Storage
-World properties `wo:r:<rx>:<rz>`, `wo:rn:<rx>:<rz>` and `wo:rd:<rx>:<rz>` (done chunks: Overworld, Nether, ancient debris; each switch has its own list, so turning one on later still tops up old land), `wo:dims` (dimension switches), `wo:modules`; per-player properties `sas:*`.
+World properties `wo:r:<rx>:<rz>`, `wo:rn:<rx>:<rz>` and `wo:rd:<rx>:<rz>` (done chunks: Overworld, Nether, ancient debris; each switch has its own list, so turning one on later still tops up old land), `wo:modules` (switches); per-player properties `sas:*`.
 
 ## License
 
