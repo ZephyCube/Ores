@@ -9,11 +9,12 @@ const SWITCHES = [
   { key: "debris_nether", name: "2x ancient debris: Nether", label: "extra ancient debris (one large and one small vein per chunk, like vanilla)", defaultOff: true },
   { key: "drops_overworld", name: "2x ore drops: Overworld", label: "ores broken in the Overworld (and the End) drop twice" },
   { key: "drops_nether", name: "2x ore drops: Nether", label: "ores broken in the Nether drop twice" },
+  { key: "drops_debris", name: "2x ore drops: ancient debris", label: "ancient debris drops twice (only debris the world generated: debris a player placed never doubles)" },
   { key: "autosmelt", name: "AutoSmelt", label: "smelts ore and sand drops automatically (/zc:as, config item, lore)" },
 ];
 
 // One-time move from the 1.5.0-1.7.0 settings: the "veins" and "double_drops" switches plus the dimension switches
-// in wo:dims become the six switches above, with the same effect as before. Runs before modules.js reads wo:modules.
+// in wo:dims become the switches above, with the same effect as before. Runs before modules.js reads wo:modules.
 system.run(() => {
   try {
     const rawDims = world.getDynamicProperty("wo:dims");
