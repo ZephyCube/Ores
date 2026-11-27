@@ -2,7 +2,7 @@ import "./style.js";
 import './smelt.js'; // AutoSmelt (based on Simple AutoSmelt by Rezn1r, MIT), merged into this pack
 import { world, system } from '@minecraft/server';
 import { smeltAfterHammer } from './smelt.js';
-import { appliesIn } from './features.js';
+import { on, appliesIn } from './features.js';
 
 // ZephyCube Ores: adds extra ore veins (about double the vanilla amount) to chunks the first time a player is near
 // them, so land that was explored before the change gets the same ore as new land. Overworld: only natural
@@ -177,8 +177,54 @@ system.runInterval(() => {
 const DROPS = {
   coal_ore: ["coal"], iron_ore: ["raw_iron", "iron_ingot"], copper_ore: ["raw_copper", "copper_ingot"],
   gold_ore: ["raw_gold", "gold_ingot"], redstone_ore: ["redstone"], lit_redstone_ore: ["redstone"], lapis_ore: ["lapis_lazuli"],
-  diamond_ore: ["diamond"], emerald_ore: ["emerald"], nether_gold_ore: ["gold_nugget"], quartz_ore: ["quartz"]
+  diamond_ore: ["diamond"], emerald_ore: ["emerald"], nether_gold_ore: ["gold_nugget"], quartz_ore: ["quartz"],
+  ancient_debris: ["ancient_debris", "netherite_scrap"]
 };
+const DEBRIS = "minecraft:ancient_debris";
+// Is doubling on for this block in this dimension? Ancient debris has its own switch; other ores use the dimension switches.
+const doubleOn = (typeId, dimId) => (typeId === DEBRIS ? on("drops_debris") : appliesIn("drops", dimId));
+
+// Ancient debris drops itself, so doubling debris a player placed would be an endless dupe (place, mine, get two).
+// Placed debris is remembered per 512x512 area (world property wo:pd:<dim>:<rx>:<rz>) and never doubled. A piston
+// that moves remembered debris also marks the blocks around it, so moving it does not make it count as natural.
+const placedCache = new Map(); // property key -> Set of "x,y,z"
+const pdKey = (dimId, l) => `wo:pd:${dimId.replace("minecraft:", "")}:${Math.floor(l.x / 512)}:${Math.floor(l.z / 512)}`;
+const pkey = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
+function placedSet(dimId, l) {
+  const k = pdKey(dimId, l);
+  let s = placedCache.get(k);
+  if (!s) {
+    s = new Set();
+    try { const v = world.getDynamicProperty(k); if (typeof v === "string") for (const p of JSON.parse(v)) s.add(p); } catch { }
+    placedCache.set(k, s);
+  }
+  return s;
+}
+function savePlaced(dimId, l) {
+  const k = pdKey(dimId, l), s = placedSet(dimId, l);
+  try { world.setDynamicProperty(k, s.size ? JSON.stringify([...s]) : undefined); } catch { }
+}
+const isPlaced = (dimId, l) => placedSet(dimId, l).has(pkey(l));
+function setPlaced(dimId, l, yes) {
+  const s = placedSet(dimId, l), k = pkey(l);
+  if (yes === s.has(k)) return;
+  if (yes) s.add(k); else s.delete(k);
+  savePlaced(dimId, l);
+}
+world.afterEvents.playerPlaceBlock.subscribe((ev) => {
+  try { if (ev.block.typeId === DEBRIS) setPlaced(ev.block.dimension.id, ev.block.location, true); } catch { }
+});
+world.afterEvents.pistonActivate.subscribe((ev) => {
+  try {
+    const dim = ev.dimension ?? ev.block?.dimension;
+    const moved = ev.piston.getAttachedBlocksLocations().filter((l) => isPlaced(dim.id, l));
+    for (const l of moved) {
+      for (const [dx, dy, dz] of [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+        setPlaced(dim.id, { x: Math.floor(l.x) + dx, y: Math.floor(l.y) + dy, z: Math.floor(l.z) + dz }, true);
+      }
+    }
+  } catch { }
+});
 function dropsFor(typeId) {
   if (!typeId.startsWith("minecraft:")) return null;
   const base = typeId.slice(10).replace(/^deepslate_/, "");
@@ -204,9 +250,8 @@ function creative(p) {
 world.beforeEvents.playerBreakBlock.subscribe((ev) => {
   if (!CONFIG.doubleDrops) return;
   try {
-    if (!appliesIn("drops", ev.block.dimension.id)) return;
     const id = ev.block.typeId;
-    if (!dropsFor(id)) return;
+    if (!dropsFor(id) || !doubleOn(id, ev.block.dimension.id)) return;
     const ids = new Set();
     for (const e of nearItems(ev.block.dimension, ev.block.location, 3)) ids.add(e.id);
     snapshots.set(bkey(ev.block.dimension, ev.block.location), { ids, tick: system.currentTick });
@@ -235,13 +280,16 @@ function copyDrops(dim, loc, wanted, snap, budget) {
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
   if (!CONFIG.doubleDrops) return;
   try {
-    const wanted = dropsFor(ev.brokenBlockPermutation.type.id);
+    const brokenId = ev.brokenBlockPermutation.type.id;
+    const wanted = dropsFor(brokenId);
     if (!wanted) return;
     const dim = ev.block.dimension, loc = ev.block.location, k = bkey(dim, loc);
-    if (!appliesIn("drops", dim.id)) return;
     const snap = snapshots.get(k) ?? { ids: new Set() };
     snapshots.delete(k);
-    if (creative(ev.player) || hasSilk(ev.itemStackAfterBreak)) return;
+    if (brokenId === DEBRIS && isPlaced(dim.id, loc)) { setPlaced(dim.id, loc, false); return; } // placed by a player
+    if (!doubleOn(brokenId, dim.id)) return;
+    // Silk Touch is skipped for ores (it would double the ore block); debris drops itself with or without it
+    if (creative(ev.player) || (brokenId !== DEBRIS && hasSilk(ev.itemStackAfterBreak))) return;
     let left = CONFIG.maxDoubledPerBreak;
     // drops can appear a tick or two after the break event (and AutoSmelt swaps them later), so look three times
     left -= copyDrops(dim, loc, wanted, snap, left);
@@ -266,12 +314,15 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     let cx = 0, cy = 0, cz = 0;
     for (const b of m.blocks) { cx += b.x; cy += b.y; cz += b.z; }
     const center = { x: Math.floor(cx / m.blocks.length), y: Math.floor(cy / m.blocks.length), z: Math.floor(cz / m.blocks.length) };
-    if (CONFIG.doubleDrops && appliesIn("drops", m.d) && !m.silk && !creative(player)) {
+    if (CONFIG.doubleDrops && !creative(player)) {
       const snap = { ids: new Set(Array.isArray(m.before) ? m.before : []) };
       for (const b of m.blocks) {
-        const wanted = dropsFor(String(b.id));
+        const id = String(b.id);
+        const wanted = dropsFor(id);
         if (!wanted) continue;
         const loc = { x: b.x, y: b.y, z: b.z };
+        if (id === DEBRIS && isPlaced(m.d, loc)) { setPlaced(m.d, loc, false); continue; }
+        if (!doubleOn(id, m.d) || (m.silk && id !== DEBRIS)) continue;
         let left = CONFIG.maxDoubledPerBreak;
         left -= copyDrops(dim, loc, wanted, snap, left);
         system.runTimeout(() => { if (left > 0) left -= copyDrops(dim, loc, wanted, snap, left); }, 2);
